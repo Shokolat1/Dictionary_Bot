@@ -8,9 +8,9 @@ router.get('/', async function (req, res, next) {
   await getData()
     .then((data) => {
       // res.json(data)
-      fs.writeFile("diccionario.json", JSON.stringify(data), function(err, result) {
-        if(err) console.log('error', err);
-    });
+      fs.writeFile("diccionario.json", JSON.stringify(data), function (err, result) {
+        if (err) console.log('error', err);
+      });
       res.send('COMPLETADO!')
     })
     .catch((err) => {
@@ -19,7 +19,7 @@ router.get('/', async function (req, res, next) {
 });
 
 async function getData() {
-  const browser = await puppeteer.launch({ headless: false });
+  const browser = await puppeteer.launch({ headless: false, ignoreHTTPSErrors: true });
   const page = await browser.newPage();
 
   page.setDefaultTimeout(0);
@@ -36,6 +36,21 @@ async function getData() {
 
     d.forEach(el => {
       a.push(el.innerHTML.trim())
+    })
+
+    return a
+  }, title)
+
+  const formateados = await page.evaluate(title => {
+    const d = document.querySelectorAll(title);
+    let a = []
+
+    d.forEach(el => {
+      a.push(el.innerHTML
+        .trim()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase())
     })
 
     return a
@@ -64,8 +79,9 @@ async function getData() {
 
   for (let i = 0; i < titulos.length; i++) {
     things.push({
-      term:titulos[i],
-      meaning:meanings[i]
+      term: titulos[i],
+      normalized: formateados[i],
+      meaning: meanings[i]
     })
   }
 
